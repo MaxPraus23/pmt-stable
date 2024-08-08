@@ -10,8 +10,6 @@
 namespace pmt {
 
 PMT::~PMT() {
-  StopDump();
-  StopThread();
 };
 
 double PMT::seconds(const State &first, const State &second) {
@@ -45,44 +43,6 @@ float State::joules(int i) {
 float State::watts(int i) {
   assert(i < nr_measurements_);
   return watt_[i];
-}
-
-void PMT::StartThread() {
-  thread_ = std::thread([&] {
-    const State start = GetState();
-    assert(start.nr_measurements_ > 0);
-    State previous = start;
-    state_latest_ = start;
-
-    if (dump_file_) {
-      DumpHeader(start);
-    }
-
-    const int measurement_interval =
-        GetMeasurementInterval();  // in milliseconds
-    assert(measurement_interval > 0);
-    const float dumpInterval = GetDumpInterval();  // in seconds
-    assert(dumpInterval > 0);
-
-    while (!thread_stop_) {
-      std::this_thread::sleep_for(
-          std::chrono::milliseconds(measurement_interval));
-      state_latest_ = GetState();
-
-      const float duration = seconds(previous, state_latest_);
-      if (dump_file_ && duration > dumpInterval) {
-        Dump(start, previous, state_latest_);
-        previous = state_latest_;
-      }
-    }
-  });
-}
-
-void PMT::StopThread() {
-  thread_stop_ = true;
-  if (thread_.joinable()) {
-    thread_.join();
-  }
 }
 
 void PMT::StartDump(const char *filename) {
@@ -140,18 +100,17 @@ double PMT::GetTime() {
 }
 
 State PMT::Read() {
-  const int measurement_interval = GetMeasurementInterval();
-  if (!thread_started_) {
-    StartThread();
-    thread_started_ = true;
-    std::this_thread::sleep_for(
-        std::chrono::milliseconds(measurement_interval));
-  }
-  while (seconds(state_previous_, state_latest_) == 0) {
-    std::this_thread::sleep_for(
-        std::chrono::milliseconds(measurement_interval));
-  }
+  if (!initialized_) {
+        // Initialize the first measurement
+        state_previous_ = GetState();
+        initialized_ = true;
+    }
+
+    // Get the latest measurement
+    state_latest_ = GetState();
+
   state_previous_ = state_latest_;
+
   return state_latest_;
 }
 

@@ -26,7 +26,7 @@ class RaplImpl : public Rapl {
   State GetState() override;
 
   virtual const char *GetDumpFilename() override { return "/tmp/pmt_rapl.out"; }
-  virtual int GetMeasurementInterval() override { return 100; }
+  virtual int GetMeasurementInterval() override { return 1; }
 
  private:
   std::vector<int> DetectPackages();

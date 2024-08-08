@@ -81,14 +81,8 @@ class PMT {
   // The last state set by the thread
   State state_latest_;
 
-  // This thread continuously call GetState to update state_latest_. It is
-  // started automatically upon the first Read() call.
-  std::thread thread_;
-  volatile bool thread_started_ = false;
-  volatile bool thread_stop_ = false;
-
-  void StartThread();
-  void StopThread();
+  // Bool to check if we got state_previous. If not, we intilize both states.
+  volatile bool initialized_ = false;
 
   void DumpHeader(const State &state);
 
